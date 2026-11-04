@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% load shop_extras %}
+
+{% block title %}Buyurtmalarim — Onlayn Bozor{% endblock %}
+
+{% block content %}
+<section class="products-section">
+    <div class="container">
+        <div class="page-header">
+            <span class="home-section-kicker">XARIDLARINGIZ TARIXI</span>
+            <h1>Buyurtmalarim</h1>
+        </div>
+        <div class="order-history-list">
+            {% for order in orders %}
+            <article class="order-history-card glass-panel">
+                <div class="order-history-heading">
+                    <div>
+                        <h2>Buyurtma #{{ order.id }}</h2>
+                        <p>{{ order.created_at|date:"d.m.Y H:i" }} · {{ order.get_status_display }}</p>
+                    </div>
+                    <strong>{{ order.total|uzs }}</strong>
+                </div>
+                <ul>
+                    {% for item in order.items.all %}
+                    <li>{{ item.product_name }} × {{ item.quantity }} <span>{{ item.price|uzs }}</span></li>
+                    {% endfor %}
+                </ul>
+                <p class="order-delivery">Yetkazish: {{ order.address }} · {{ order.phone }}</p>
+            </article>
+            {% empty %}
+            <div class="empty-cart">
+                <p>Hozircha buyurtmalar yo‘q.</p>
+                <a class="btn btn-primary" href="{% url 'shop:product_list' %}">Mahsulotlarni ko‘rish</a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

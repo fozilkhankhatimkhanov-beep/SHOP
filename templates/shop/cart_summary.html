@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% load shop_extras %}
+
+{% block title %}Savat — Onlayn Bozor{% endblock %}
+
+{% block content %}
+<section class="cart-section">
+    <div class="container">
+        <h1>Savatingiz</h1>
+
+        {% if cart %}
+        <div class="cart-container" data-cart-section="true">
+            <div class="cart-items">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Mahsulot</th>
+                            <th>Narxi</th>
+                            <th>Miqdor</th>
+                            <th>Jami</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody class="cart-items-body">
+                        {% for item in cart %}
+                        <tr class="cart-item-row" data-product-id="{{ item.product.id }}">
+                            <td>
+                                <div class="cart-item-info">
+                                    <div class="cart-item-image">
+                                        {% if item.product.image %}
+                                        <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" />
+                                        {% else %}
+                                        📦
+                                        {% endif %}
+                                    </div>
+                                    <div class="cart-item-details">
+                                        <a href="{% url 'shop:product_detail' item.product.category.slug item.product.slug %}">
+                                            {{ item.product.name }}
+                                        </a>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-center">{{ item.price|uzs }}</td>
+                            <td class="text-center">
+                                <input type="number"
+                                       class="cart-qty-input"
+                                       value="{{ item.quantity }}"
+                                       min="1"
+                                       data-product-id="{{ item.product.id }}"
+                                       style="width:60px" />
+                            </td>
+                            <td class="text-center cart-item-total">{{ item.total_price|uzs }}</td>
+                            <td class="text-center">
+                                <button class="btn btn-danger btn-small remove-item-btn"
+                                        data-product-id="{{ item.product.id }}">
+                                    O'chirish
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3"></td>
+                            <td class="cart-grand-total">Jami: {{ cart.get_total_price|uzs }}</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="cart-actions">
+                <a href="{% url 'shop:product_list' %}" class="btn btn-ghost">Mahsulotlar</a>
+                <button class="btn btn-secondary" id="clear-cart-btn">Savatni tozalash</button>
+                <a class="btn btn-primary btn-large" id="checkout-btn" href="{% url 'shop:checkout' %}">
+                    Buyurtma berish
+                </a>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-cart" data-cart-empty="true">
+            <p>Savatingiz bo'sh.</p>
+            <a href="{% url 'shop:product_list' %}" class="btn btn-primary">Mahsulotlarni ko'rish</a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

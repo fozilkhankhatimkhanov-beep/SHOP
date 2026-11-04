@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% load shop_extras %}
+
+{% block title %}Buyurtma qabul qilindi — Onlayn Bozor{% endblock %}
+
+{% block content %}
+<section class="order-result-section">
+    <div class="container">
+        <div class="order-result glass-panel">
+            <div class="order-result-icon" aria-hidden="true">✓</div>
+            <span class="home-section-kicker">MUVAFFAQIYATLI</span>
+            <h1>Buyurtmangiz qabul qilindi</h1>
+            <p>Buyurtma #{{ order.id }} tayyor. Yetkazib berishdan oldin siz bilan bog‘lanamiz.</p>
+            <div class="order-result-meta">
+                <span>Telefon: <strong>{{ order.phone }}</strong></span>
+                <span>Manzil: <strong>{{ order.address }}</strong></span>
+                <span>Jami: <strong>{{ order.total|uzs }}</strong></span>
+            </div>
+            <a class="btn btn-primary btn-large" href="{% url 'shop:order_history' %}">Buyurtmalarim</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

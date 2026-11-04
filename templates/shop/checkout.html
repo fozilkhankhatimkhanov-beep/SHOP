@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% load shop_extras %}
+
+{% block title %}Buyurtmani rasmiylashtirish — Onlayn Bozor{% endblock %}
+
+{% block content %}
+<section class="checkout-section">
+    <div class="container">
+        <div class="page-header checkout-heading">
+            <span class="home-section-kicker">XAVFSIZ RASMIYLASHTIRISH</span>
+            <h1>Buyurtma ma’lumotlari</h1>
+            <p>Yetkazish manzili va telefon raqamingizni kiriting.</p>
+        </div>
+
+        <div class="checkout-layout">
+            <form method="post" class="checkout-form glass-panel">
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                <div class="message error">{{ form.non_field_errors }}</div>
+                {% endif %}
+                {% for field in form %}
+                <div class="field-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% for error in field.errors %}
+                    <p class="form-error">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+                <p class="checkout-note">To‘lov yetkazib berilganda naqd amalga oshiriladi.</p>
+                <button class="btn btn-primary btn-large auth-submit" type="submit">
+                    Buyurtmani tasdiqlash
+                </button>
+            </form>
+
+            <aside class="checkout-summary glass-panel">
+                <h2>Savat xulosasi</h2>
+                {% for item in cart %}
+                <div class="checkout-line">
+                    <span>{{ item.product.name }} × {{ item.quantity }}</span>
+                    <strong>{{ item.total_price|uzs }}</strong>
+                </div>
+                {% endfor %}
+                <div class="checkout-total">
+                    <span>Jami</span>
+                    <strong>{{ cart.get_total_price|uzs }}</strong>
+                </div>
+            </aside>
+        </div>
+    </div>
+</section>
+{% endblock %}

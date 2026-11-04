@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ category.name|default:"Barcha mahsulotlar" }} — Onlayn Bozor{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <div class="container">
+        <h1>{{ category.name|default:"Barcha mahsulotlar" }}</h1>
+    </div>
+</section>
+
+<section class="products-section">
+    <div class="container">
+        {% if category %}
+        <a href="{% url 'shop:product_list' %}" class="btn btn-ghost">&#x2190; Barchasiga qaytish</a>
+        {% endif %}
+
+        {% if products %}
+        <div class="products-grid">
+            {% for product in products %}
+            <div class="product-card">
+                <a href="{% url 'shop:product_detail' product.category.slug product.slug %}" class="product-link">
+                    {% if product.image %}
+                    <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-image" />
+                    {% else %}
+                    <div class="product-image-placeholder">&#x1F4E6;</div>
+                    {% endif %}
+                    <div class="product-info">
+                        <h3>{{ product.name }}</h3>
+                        <p class="product-price">{{ product.price }} so'm</p>
+                    </div>
+                </a>
+                <button class="add-to-cart-btn"
+                        data-product-id="{{ product.id }}"
+                        {% if product.stock == 0 %}disabled{% endif %}>
+                    {% if product.stock == 0 %}Yetishmaydi{% else %}Savatga qo'shish{% endif %}
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="empty-state">Bu kategoriyada mahsulotlar yo'q.</p>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

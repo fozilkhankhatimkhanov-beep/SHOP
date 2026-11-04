@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% load static shop_extras %}
+
+{% block title %}Bosh sahifa — Onlayn Bozor{% endblock %}
+
+{% block content %}
+<section class="hero home-hero">
+    <div class="container">
+        <div class="home-hero-copy">
+            <span class="home-eyebrow"><span></span> ONLAYN XARID QILISHNING YANGI USULI</span>
+            <h1>Yaxshi tanlov.<br><span>Yaxshi kayfiyat.</span></h1>
+            <p>Har kuni kerak bo'ladigan mahsulotlar — qulay narxlar va oson buyurtma bilan.</p>
+            <div class="home-hero-actions">
+                <a href="{% url 'shop:product_list' %}" class="home-cta">
+                    Xaridni boshlash <span aria-hidden="true">↗</span>
+                </a>
+                <span class="home-hero-note">Sevimli mahsulotingiz shu yerda</span>
+            </div>
+            <div class="home-trust-row">
+                <span><b>01</b> Oson tanlov</span>
+                <span><b>02</b> Qulay xarid</span>
+                <span><b>03</b> Tez buyurtma</span>
+            </div>
+        </div>
+        <div class="home-hero-art" aria-label="Tavsiya etilgan mahsulotlar">
+            <div class="home-art-orbit home-art-orbit-one"></div>
+            <div class="home-art-orbit home-art-orbit-two"></div>
+            {% if products %}
+            {% with featured=products.0 %}
+            <a class="home-feature-product" href="{% url 'shop:product_detail' featured.category.slug featured.slug %}">
+                <span class="home-feature-label">BUGUNGI TANLOV</span>
+                {% if featured.image %}
+                <img src="{{ featured.image.url }}" alt="{{ featured.name }}" />
+                {% else %}
+                <div class="home-art-empty" aria-hidden="true">📦</div>
+                {% endif %}
+                <span class="home-feature-caption">
+                    <span>{{ featured.category.name }}</span>
+                    <strong>{{ featured.name }}</strong>
+                    <b>{{ featured.price|uzs }} <i aria-hidden="true">↗</i></b>
+                </span>
+            </a>
+            {% endwith %}
+            {% else %}
+            <div class="home-art-empty" aria-hidden="true">✳</div>
+            {% endif %}
+            <span class="home-art-sparkle home-art-sparkle-one">✳</span>
+            <span class="home-art-sparkle home-art-sparkle-two">✦</span>
+        </div>
+    </div>
+</section>
+
+<section class="categories-section home-categories">
+    <div class="container">
+        <div class="home-section-heading">
+            <div>
+                <span class="home-section-kicker">NIMANI IZLAYAPSIZ?</span>
+                <h2 class="section-title">Kategoriyalar</h2>
+            </div>
+            <a href="{% url 'shop:product_list' %}" class="home-text-link">Barcha mahsulotlar <span aria-hidden="true">↗</span></a>
+        </div>
+        <div class="categories-grid">
+            {% for category in categories %}
+            <a href="{% url 'shop:product_list_by_category' category.slug %}" class="category-card">
+                <span class="home-category-symbol" aria-hidden="true">
+                    {% if category.slug == 'elektronika' %}⌁
+                    {% elif category.slug == 'kiyim-kechak' %}◒
+                    {% elif category.slug == 'oyinchoqlar' %}✳
+                    {% elif category.slug == 'kitoblar' %}▤
+                    {% else %}{{ category.name|first|upper }}{% endif %}
+                </span>
+                <div class="category-info">
+                    <h3>{{ category.name }}</h3>
+                    <p>Ko'rib chiqish <span aria-hidden="true">↗</span></p>
+                </div>
+            </a>
+            {% empty %}
+            <p>Hozircha kategoriya yo'q.</p>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="products-section home-products">
+    <div class="container">
+        <div class="home-section-heading">
+            <div>
+                <span class="home-section-kicker">SIZ UCHUN TANLADIK</span>
+                <h2 class="section-title">Ommabop mahsulotlar</h2>
+            </div>
+            <a href="{% url 'shop:product_list' %}" class="home-text-link">Hammasini ko'rish <span aria-hidden="true">↗</span></a>
+        </div>
+        <div class="products-grid">
+            {% for product in products %}
+            <div class="product-card">
+                <a href="{% url 'shop:product_detail' product.category.slug product.slug %}" class="product-link">
+                    {% if product.image %}
+                    <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-image" />
+                    {% else %}
+                    <div class="product-image-placeholder"
+                         data-name="{{ product.name }}"
+                         data-image="{{ product.slug }}.png">📦</div>
+                    {% endif %}
+                    <div class="product-info">
+                        <h3>{{ product.name }}</h3>
+                        <p class="product-price">{{ product.price|uzs }}</p>
+                        <p class="product-rating-summary">
+                            {% if product.average_rating %}★ {{ product.average_rating|floatformat:1 }}/15 · {{ product.rating_count }} baho{% else %}Hali baholanmagan{% endif %}
+                        </p>
+                    </div>
+                </a>
+                <button class="add-to-cart-btn"
+                        data-product-id="{{ product.id }}"
+                        {% if product.stock == 0 %}disabled{% endif %}>
+                    {% if product.stock == 0 %}Sotuvda yo'q{% else %}Savatga qo'shish{% endif %}
+                </button>
+            </div>
+            {% empty %}
+            <p>Hozircha mahsulotlar yo'q.</p>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

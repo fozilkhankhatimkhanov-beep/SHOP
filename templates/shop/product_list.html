@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load shop_extras %}
+
+{% block title %}{{ category.name|default:"Barcha mahsulotlar" }} — Onlayn Bozor{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <div class="container">
+        <h1>{{ category.name|default:"Barcha mahsulotlar" }}</h1>
+        {% if query %}
+        <p>“{{ query }}” bo‘yicha qidiruv natijalari</p>
+        {% endif %}
+    </div>
+</section>
+
+<section class="products-section">
+    <div class="container">
+        {% if category %}
+        <a href="{% url 'shop:product_list' %}" class="btn btn-ghost">← Barchasiga qaytish</a>
+        {% endif %}
+
+        {% if products %}
+        <div class="products-grid">
+            {% for product in products %}
+            <div class="product-card">
+                <a href="{% url 'shop:product_detail' product.category.slug product.slug %}" class="product-link">
+                    {% if product.image %}
+                    <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-image" />
+                    {% else %}
+                    <div class="product-image-placeholder"
+                         data-name="{{ product.name }}"
+                         data-image="{{ product.slug }}.png">📦</div>
+                    {% endif %}
+                    <div class="product-info">
+                        <h3>{{ product.name }}</h3>
+                        <p class="product-price">{{ product.price|uzs }}</p>
+                        <p class="product-rating-summary">
+                            {% if product.average_rating %}★ {{ product.average_rating|floatformat:1 }}/15 · {{ product.rating_count }} baho{% else %}Hali baholanmagan{% endif %}
+                        </p>
+                    </div>
+                </a>
+                <button class="add-to-cart-btn"
+                        data-product-id="{{ product.id }}"
+                        {% if product.stock == 0 %}disabled{% endif %}>
+                    {% if product.stock == 0 %}Sotuvda yo'q{% else %}Savatga qo'shish{% endif %}
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="empty-state">
+            {% if query %}Qidiruv bo‘yicha mahsulot topilmadi.{% else %}Bu kategoriyada mahsulotlar yo'q.{% endif %}
+        </p>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

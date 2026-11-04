@@ -1,0 +1,50 @@
+/* Glass-morphism navbar enhancement */
+.site-header {
+    position: relative;
+    overflow: hidden;
+}
+
+.site-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -50%;
+    width: 200%;
+    height: 100%;
+    background: linear-gradient(135deg,
+        rgba(108, 92, 231, 0.08) 0%,
+        rgba(0, 184, 148, 0.05) 50%,
+        rgba(108, 92, 231, 0.08) 100%);
+    background-size: 200% 200%;
+    animation: glassShimmer 8s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.site-header > .container,
+.site-header > div {
+    position: relative;
+    z-index: 1;
+}
+
+@keyframes glassShimmer {
+    0%, 100% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+}
+
+.main-nav a,
+.cart-icon,
+.user-menu-trigger {
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+.main-nav a:hover,
+.theme-toggle:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
+}
