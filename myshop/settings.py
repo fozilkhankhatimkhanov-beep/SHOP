@@ -6,8 +6,8 @@ import os
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-CHANGE_THIS_IN_PRODUCTION')
-DEBUG = os.environ.get('DEBUG', 'True').lower() in ('true', '1', 'yes')
 render_hostname = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+DEBUG = os.environ.get('DEBUG', 'False' if render_hostname else 'True').lower() in ('true', '1', 'yes')
 ALLOWED_HOSTS = [host for host in (render_hostname, 'localhost', '127.0.0.1') if host]
 CSRF_TRUSTED_ORIGINS = [f'https://{render_hostname}'] if render_hostname else []
 
@@ -90,3 +90,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 if render_hostname:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 3600
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
