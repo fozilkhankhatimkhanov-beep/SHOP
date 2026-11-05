@@ -1,12 +1,15 @@
 """Django settings for myshop project."""
 
 from pathlib import Path
+import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-CHANGE_THIS_IN_PRODUCTION'
-DEBUG = True
-ALLOWED_HOSTS = []
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-CHANGE_THIS_IN_PRODUCTION')
+DEBUG = os.environ.get('DEBUG', 'True').lower() in ('true', '1', 'yes')
+render_hostname = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+ALLOWED_HOSTS = [host for host in (render_hostname, 'localhost', '127.0.0.1') if host]
+CSRF_TRUSTED_ORIGINS = [f'https://{render_hostname}'] if render_hostname else []
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -21,6 +24,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -74,6 +78,8 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -81,3 +87,6 @@ MEDIA_ROOT = BASE_DIR / 'media'
 CART_SESSION_ID = 'cart'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+if render_hostname:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
