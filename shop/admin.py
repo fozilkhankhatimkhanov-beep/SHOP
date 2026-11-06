@@ -13,6 +13,7 @@ class CategoryAdmin(admin.ModelAdmin):
 class ProductAdmin(admin.ModelAdmin):
     list_display = ('name', 'category', 'price', 'stock', 'is_available', 'created_at')
     list_filter = ('category', 'is_available', 'created_at')
+    actions = ('delete_selected',)
     list_editable = ('price', 'stock', 'is_available')
     prepopulated_fields = {'slug': ('name',)}
     search_fields = ('name', 'description')
