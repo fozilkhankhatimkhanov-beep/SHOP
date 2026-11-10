@@ -14,6 +14,7 @@ function addToCart(productId, quantity) {
     .then(function (data) {
         if (data.success) {
             updateCartCount(data.cart_count);
+            markProductInCart(productId, data.product_quantity);
             showMessage('Mahsulot savatga qo\'shildi!');
         }
         return data;
@@ -54,7 +55,7 @@ function updateQuantity(productId, quantity) {
     .then(function (data) {
         if (data.success) {
             updateCartCount(data.cart_count);
-            fillCartFromServer();
+            return fillCartFromServer();
         }
         return data;
     })
@@ -93,12 +94,32 @@ function showCartError(error) {
 }
 
 function updateCartCount(count) {
-    var el = document.querySelector('.cart-count');
-    if (el) el.textContent = count;
+    var cartLink = document.querySelector('.cart-icon');
+    if (!cartLink) return;
+
+    var el = cartLink.querySelector('.cart-count');
+    if (count > 0) {
+        if (!el) {
+            el = document.createElement('span');
+            el.className = 'cart-count';
+            cartLink.appendChild(el);
+        }
+        el.textContent = count;
+    } else if (el) {
+        el.remove();
+    }
+}
+
+function markProductInCart(productId, quantity) {
+    document.querySelectorAll('[data-product-id="' + productId + '"]').forEach(function (button) {
+        button.classList.add('in-cart');
+        button.dataset.cartQuantity = quantity;
+        button.textContent = 'Savatda (' + quantity + 'x) ✓';
+    });
 }
 
 function fillCartFromServer() {
-    fetch('/cart/')
+    return fetch('/cart/')
         .then(function (res) { return res.text(); })
         .then(function (html) {
             var parser = new DOMParser();
@@ -111,40 +132,9 @@ function fillCartFromServer() {
             var localCartState = document.querySelector('.cart-container, .empty-cart');
             if (serverCartState && localCartState) {
                 localCartState.replaceWith(serverCartState.cloneNode(true));
-                initializeCartSummary();
             }
         })
         .catch(showCartError);
-}
-
-function initializeCartSummary() {
-    document.querySelectorAll('.cart-qty-input').forEach(function (input) {
-        input.addEventListener('change', function () {
-            var quantity = parseInt(this.value, 10);
-            if (!Number.isInteger(quantity) || quantity < 1) {
-                quantity = 1;
-                this.value = quantity;
-            }
-            updateQuantity(this.dataset.productId, quantity);
-        });
-    });
-
-    document.querySelectorAll('.remove-item-btn').forEach(function (button) {
-        button.addEventListener('click', function () {
-            if (confirm('Savatdan o‘chirmoqchimisiz?')) {
-                removeFromCart(this.dataset.productId);
-            }
-        });
-    });
-
-    var clearButton = document.getElementById('clear-cart-btn');
-    if (clearButton) {
-        clearButton.addEventListener('click', function () {
-            if (confirm('Savatni tozalamoqchimisiz?')) {
-                clearCart();
-            }
-        });
-    }
 }
 
 function showMessage(msg) {
@@ -223,15 +213,52 @@ function fillPlaceholderImage() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', function () {
+function initializeCartPage() {
     fillPlaceholderImage();
-    initializeCartSummary();
-    document.querySelectorAll('.add-to-cart-btn:not([disabled])').forEach(function (btn) {
-        btn.addEventListener('click', function (e) {
-            e.preventDefault();
-            var productId = this.dataset.productId;
-            addToCart(productId, 1);
-            return false;
-        });
-    });
+}
+
+document.addEventListener('DOMContentLoaded', initializeCartPage);
+document.addEventListener('site:page-loaded', initializeCartPage);
+
+document.addEventListener('click', function (event) {
+    var quantityButton = event.target.closest('.cart-qty-btn');
+    if (quantityButton) {
+        var row = quantityButton.closest('.cart-item-row');
+        var input = row.querySelector('.cart-qty-input');
+        var quantity = parseInt(input.value, 10);
+        var maxQuantity = parseInt(input.max, 10);
+        var change = quantityButton.dataset.action === 'increase' ? 1 : -1;
+        var nextQuantity = Math.min(maxQuantity, Math.max(1, quantity + change));
+
+        if (nextQuantity !== quantity) {
+            row.querySelectorAll('.cart-qty-btn').forEach(function (control) {
+                control.disabled = true;
+            });
+            updateQuantity(input.dataset.productId, nextQuantity).then(function () {
+                if (row.isConnected) {
+                    row.querySelectorAll('.cart-qty-btn').forEach(function (control) {
+                        control.disabled = false;
+                    });
+                }
+            });
+        }
+        return;
+    }
+
+    var removeButton = event.target.closest('.remove-item-btn');
+    if (removeButton) {
+        removeFromCart(removeButton.dataset.productId);
+        return;
+    }
+
+    if (event.target.closest('#clear-cart-btn')) {
+        if (confirm('Savatni tozalamoqchimisiz?')) clearCart();
+        return;
+    }
+
+    var addButton = event.target.closest('.add-to-cart-btn:not([disabled])');
+    if (addButton) {
+        event.preventDefault();
+        addToCart(addButton.dataset.productId, 1);
+    }
 });

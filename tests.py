@@ -1,9 +1,16 @@
+import base64
+from datetime import timedelta
+from unittest.mock import patch
+
+import qrcode
 import tempfile
+
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 from decimal import Decimal
 
 from shop.models import Category, Order, OrderItem, Product, ProductRating
@@ -118,6 +125,11 @@ class ShopViewTest(TestCase):
         response = self.client.get(reverse("shop:home"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Onlayn Bozor")
+        self.assertContains(response, "site.js?v=3")
+        self.assertRegex(
+            response.content.decode(),
+            r'<a href="/"[\r\n\s]+class="active" aria-current="page">Bosh sahifa',
+        )
         self.assertIn("categories", response.context)
         self.assertIn("products", response.context)
 
@@ -129,6 +141,36 @@ class ShopViewTest(TestCase):
         self.assertIn(Product, admin.site._registry)
         self.assertIn(Order, admin.site._registry)
         self.assertIn(ProductRating, admin.site._registry)
+
+    def test_admin_can_delete_selected_categories(self):
+        admin_user = User.objects.create_superuser(
+            username="category-admin",
+            password="test-password",
+            email="admin@example.com",
+        )
+        self.client.force_login(admin_user)
+
+        response = self.client.get(reverse("admin:shop_category_changelist"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'value="delete_selected"')
+
+    def test_cart_badge_only_appears_when_cart_has_products(self):
+        response = self.client.get(reverse("shop:home"))
+        self.assertNotContains(response, 'class="cart-count"')
+
+        category = Category.objects.create(name="Kitoblar", slug="kitoblar")
+        product = Product.objects.create(
+            category=category,
+            name="Python Darslik",
+            slug="python-darslik",
+            price=Decimal("150000.00"),
+            stock=5,
+        )
+        self.client.post(reverse("shop:cart_add", args=[product.id]), {"quantity": 1})
+
+        response = self.client.get(reverse("shop:home"))
+        self.assertContains(response, '<span class="cart-count">1</span>', html=True)
 
     def test_guest_is_redirected_to_auth_and_sees_only_auth_navigation(self):
         self.client.logout()
@@ -143,6 +185,39 @@ class ShopViewTest(TestCase):
         response = self.client.get(reverse("shop:product_list"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Barcha mahsulotlar")
+        self.assertRegex(
+            response.content.decode(),
+            r'<a href="/shop/"[\r\n\s]+class="active" aria-current="page">Mahsulotlar',
+        )
+
+    def test_carted_products_are_marked_on_catalog_and_detail_pages(self):
+        category = Category.objects.create(name="Kitoblar", slug="kitoblar")
+        product = Product.objects.create(
+            category=category,
+            name="Python Darslik",
+            slug="python-darslik",
+            price=Decimal("150000.00"),
+            stock=3,
+        )
+        add_response = self.client.post(
+            reverse("shop:cart_add", args=[product.id]),
+            {"quantity": 2},
+        )
+        self.assertEqual(add_response.json()["product_quantity"], 2)
+
+        list_response = self.client.get(reverse("shop:product_list"))
+        detail_response = self.client.get(
+            reverse("shop:product_detail", args=[category.slug, product.slug])
+        )
+
+        self.assertContains(list_response, 'class="add-to-cart-btn in-cart"')
+        self.assertContains(list_response, "Savatda (2x) ✓")
+        self.assertContains(detail_response, "Savatda (2x) ✓")
+        self.assertContains(
+            detail_response,
+            'class="btn btn-primary btn-large in-cart"',
+        )
+        self.assertContains(detail_response, "product-detail.js?v=1")
 
     def test_product_search_filters_names_and_descriptions(self):
         category = Category.objects.create(name="Kitoblar", slug="kitoblar")
@@ -167,6 +242,40 @@ class ShopViewTest(TestCase):
         self.assertContains(response, "Python Darslik")
         self.assertNotContains(response, "Matematika")
 
+    def test_product_search_matches_all_words_and_category_names(self):
+        books = Category.objects.create(name="Kitoblar", slug="kitoblar")
+        electronics = Category.objects.create(
+            name="Elektronika",
+            slug="elektronika",
+        )
+        Product.objects.create(
+            category=books,
+            name="Python Darslik",
+            slug="python-darslik",
+            price=Decimal("150000.00"),
+            description="Dasturlashni o'rganish",
+        )
+        Product.objects.create(
+            category=electronics,
+            name="Simsiz Quloqchin",
+            slug="simsiz-quloqchin",
+            price=Decimal("250000.00"),
+        )
+
+        multi_word_response = self.client.get(
+            reverse("shop:product_list"),
+            {"q": "python dasturlash"},
+        )
+        category_response = self.client.get(
+            reverse("shop:product_list"),
+            {"q": "elektronika"},
+        )
+
+        self.assertContains(multi_word_response, "Python Darslik")
+        self.assertNotContains(multi_word_response, "Simsiz Quloqchin")
+        self.assertContains(category_response, "Simsiz Quloqchin")
+        self.assertContains(category_response, "Qidiruv natijalari")
+
     def test_product_list_uses_slug_for_missing_product_image(self):
         category = Category.objects.create(name="Kitoblar", slug="kitoblar")
         Product.objects.create(
@@ -185,6 +294,28 @@ class ShopViewTest(TestCase):
         response = self.client.get(reverse("shop:cart_summary"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Savatingiz")
+
+    def test_cart_quantity_uses_ajax_plus_minus_controls_without_typing(self):
+        category = Category.objects.create(name="Kitoblar", slug="kitoblar")
+        product = Product.objects.create(
+            category=category,
+            name="Python Darslik",
+            slug="python-darslik",
+            price=Decimal("150000.00"),
+            stock=5,
+        )
+        self.client.post(
+            reverse("shop:cart_add", args=[product.id]),
+            {"quantity": 2},
+        )
+
+        response = self.client.get(reverse("shop:cart_summary"))
+
+        self.assertContains(response, 'class="cart-qty-btn"')
+        self.assertContains(response, 'data-action="decrease"')
+        self.assertContains(response, 'data-action="increase"')
+        self.assertContains(response, 'value="2"')
+        self.assertContains(response, "readonly")
 
     def test_cart_add_and_update_enforce_stock_and_exact_quantity(self):
         category = Category.objects.create(name="Kitoblar", slug="kitoblar")
@@ -353,3 +484,107 @@ class ShopViewTest(TestCase):
         )
 
         self.assertEqual(response.status_code, 404)
+
+    def test_order_success_receipt_contains_qr_with_order_details(self):
+        order = Order.objects.create(
+            user=self.user,
+            phone="+998 90 123 45 67",
+            address="Toshkent, Chilonzor, 12-uy",
+            total=Decimal("100000.00"),
+        )
+        OrderItem.objects.create(
+            order=order,
+            product_name="Python Darslik",
+            price=Decimal("100000.00"),
+            quantity=1,
+        )
+
+        with patch("shop.views.qrcode.make", wraps=qrcode.make) as make_qr:
+            response = self.client.get(
+                reverse("shop:order_success", args=[order.pk])
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f'alt="Buyurtma #{order.pk} cheki uchun QR-kod"')
+        self.assertTrue(
+            base64.b64decode(response.context["qr_code_data"]).startswith(b"<?xml")
+        )
+        qr_payload = make_qr.call_args.args[0]
+        self.assertIn(f"Buyurtma #{order.pk}", qr_payload)
+        self.assertIn("Python Darslik x 1", qr_payload)
+        self.assertNotIn(order.phone, qr_payload)
+        self.assertNotIn(order.address, qr_payload)
+
+    def test_order_can_be_canceled_within_thirty_minutes_and_restores_stock(self):
+        category = Category.objects.create(name="Kitoblar", slug="kitoblar")
+        product = Product.objects.create(
+            category=category,
+            name="Python Darslik",
+            slug="python-darslik",
+            price=Decimal("150000.00"),
+            stock=3,
+        )
+        order = Order.objects.create(
+            user=self.user,
+            phone="+998 90 123 45 67",
+            address="Toshkent, Chilonzor, 12-uy",
+            total=Decimal("300000.00"),
+        )
+        OrderItem.objects.create(
+            order=order,
+            product=product,
+            product_name=product.name,
+            price=product.price,
+            quantity=2,
+        )
+        product.stock -= 2
+        product.save(update_fields=("stock",))
+
+        history = self.client.get(reverse("shop:order_history"))
+        self.assertContains(history, "Buyurtmani bekor qilish")
+
+        response = self.client.post(reverse("shop:cancel_order", args=[order.pk]))
+
+        self.assertRedirects(response, reverse("shop:order_history"))
+        order.refresh_from_db()
+        product.refresh_from_db()
+        self.assertEqual(order.status, Order.Status.CANCELED)
+        self.assertEqual(product.stock, 3)
+
+    def test_order_cannot_be_canceled_after_thirty_minutes(self):
+        order = Order.objects.create(
+            user=self.user,
+            phone="+998 90 123 45 67",
+            address="Toshkent, Chilonzor, 12-uy",
+            total=Decimal("100000.00"),
+        )
+        Order.objects.filter(pk=order.pk).update(
+            created_at=timezone.now() - timedelta(minutes=31),
+        )
+
+        history = self.client.get(reverse("shop:order_history"))
+        response = self.client.post(reverse("shop:cancel_order", args=[order.pk]))
+
+        self.assertNotContains(history, "Buyurtmani bekor qilish")
+        order.refresh_from_db()
+        self.assertEqual(order.status, Order.Status.PENDING)
+        self.assertRedirects(response, reverse("shop:order_history"))
+
+    def test_only_order_owner_can_cancel_an_order(self):
+        order = Order.objects.create(
+            user=self.user,
+            phone="+998 90 123 45 67",
+            address="Toshkent, Chilonzor, 12-uy",
+            total=Decimal("100000.00"),
+        )
+        another_user = User.objects.create_user(
+            username="another-customer",
+            password="test-password",
+        )
+        self.client.force_login(another_user)
+
+        response = self.client.post(reverse("shop:cancel_order", args=[order.pk]))
+
+        self.assertEqual(response.status_code, 404)
+        order.refresh_from_db()
+        self.assertEqual(order.status, Order.Status.PENDING)

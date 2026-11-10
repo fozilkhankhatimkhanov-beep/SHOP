@@ -2,7 +2,15 @@ from shop.cart import Cart
 
 
 def cart(request):
-    return {'cart': Cart(request)}
+    current_cart = Cart(request)
+    return {
+        'cart': current_cart,
+        'cart_product_ids': list(current_cart.cart.keys()),
+        'cart_product_quantities': {
+            product_id: item['quantity']
+            for product_id, item in current_cart.cart.items()
+        },
+    }
 
 
 def auth_urls(request):

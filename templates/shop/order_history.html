@@ -26,6 +26,14 @@
                     {% endfor %}
                 </ul>
                 <p class="order-delivery">Yetkazish: {{ order.address }} · {{ order.phone }}</p>
+                {% if order.can_be_canceled %}
+                <form method="post" action="{% url 'shop:cancel_order' order.id %}" class="order-cancel-form"
+                      onsubmit="return confirm('Buyurtmani bekor qilmoqchimisiz?')">
+                    {% csrf_token %}
+                    <p>Buyurtmani 30 daqiqa ichida bekor qilishingiz mumkin.</p>
+                    <button class="btn btn-danger btn-small" type="submit">Buyurtmani bekor qilish</button>
+                </form>
+                {% endif %}
             </article>
             {% empty %}
             <div class="empty-cart">

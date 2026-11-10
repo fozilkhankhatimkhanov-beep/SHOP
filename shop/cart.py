@@ -110,7 +110,11 @@ def cart_add(request, product_id):
         return JsonResponse({'success': False, 'error': 'Omborda yetarli mahsulot yo‘q.'}, status=400)
 
     cart.add(product=product, quantity=quantity)
-    return JsonResponse({'success': True, 'cart_count': len(cart)})
+    return JsonResponse({
+        'success': True,
+        'cart_count': len(cart),
+        'product_quantity': cart.cart[str(product.id)]['quantity'],
+    })
 
 
 @require_POST

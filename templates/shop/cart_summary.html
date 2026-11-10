@@ -42,12 +42,26 @@
                             </td>
                             <td class="text-center">{{ item.price|uzs }}</td>
                             <td class="text-center">
-                                <input type="number"
-                                       class="cart-qty-input"
-                                       value="{{ item.quantity }}"
-                                       min="1"
-                                       data-product-id="{{ item.product.id }}"
-                                       style="width:60px" />
+                                <div class="cart-quantity-control">
+                                    <button class="cart-qty-btn"
+                                            type="button"
+                                            data-action="decrease"
+                                            aria-label="{{ item.product.name }} sonini kamaytirish"
+                                            {% if item.quantity <= 1 %}disabled{% endif %}>−</button>
+                                    <input type="number"
+                                           class="cart-qty-input"
+                                           value="{{ item.quantity }}"
+                                           min="1"
+                                           max="{{ item.product.stock }}"
+                                           data-product-id="{{ item.product.id }}"
+                                           aria-label="{{ item.product.name }} miqdori"
+                                           readonly />
+                                    <button class="cart-qty-btn"
+                                            type="button"
+                                            data-action="increase"
+                                            aria-label="{{ item.product.name }} sonini oshirish"
+                                            {% if item.quantity >= item.product.stock %}disabled{% endif %}>+</button>
+                                </div>
                             </td>
                             <td class="text-center cart-item-total">{{ item.total_price|uzs }}</td>
                             <td class="text-center">

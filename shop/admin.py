@@ -6,6 +6,7 @@ from .models import Category, Order, OrderItem, Product, ProductRating
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ('name', 'slug')
+    actions = ('delete_selected',)
     prepopulated_fields = {'slug': ('name',)}
 
 

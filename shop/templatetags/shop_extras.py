@@ -14,3 +14,8 @@ def uzs(value):
         return value
     formatted = f"{amount:,.0f}".replace(",", " ")
     return f"{formatted} so'm"
+
+
+@register.filter
+def cart_quantity(quantities, product_id):
+    return quantities.get(str(product_id), 0)

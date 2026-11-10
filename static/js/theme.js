@@ -41,12 +41,9 @@
 
     applyTheme(theme);
 
-    document.addEventListener('DOMContentLoaded', function () {
-        var button = document.getElementById('theme-toggle');
-        if (button) {
-            button.addEventListener('click', function () {
-                applyTheme(theme === 'night' ? 'day' : 'night');
-            });
+    document.addEventListener('click', function (event) {
+        if (event.target.closest('#theme-toggle')) {
+            applyTheme(theme === 'night' ? 'day' : 'night');
         }
     });
 })();

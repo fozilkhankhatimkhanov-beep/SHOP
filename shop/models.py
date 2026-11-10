@@ -1,7 +1,12 @@
+from datetime import timedelta
+
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
+from django.utils import timezone
+
+ORDER_CANCELLATION_WINDOW = timedelta(minutes=30)
 
 
 class Category(models.Model):
@@ -93,6 +98,13 @@ class Order(models.Model):
 
     class Meta:
         ordering = ('-created_at',)
+
+    @property
+    def can_be_canceled(self):
+        return (
+            self.status == self.Status.PENDING
+            and timezone.now() < self.created_at + ORDER_CANCELLATION_WINDOW
+        )
 
     def __str__(self):
         return f'Buyurtma #{self.pk} — {self.user}'

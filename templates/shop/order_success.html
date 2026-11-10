@@ -16,6 +16,11 @@
                 <span>Manzil: <strong>{{ order.address }}</strong></span>
                 <span>Jami: <strong>{{ order.total|uzs }}</strong></span>
             </div>
+            <div class="order-receipt-qr">
+                <img src="data:image/svg+xml;base64,{{ qr_code_data }}"
+                     alt="Buyurtma #{{ order.id }} cheki uchun QR-kod" />
+                <p>Chek ma’lumotlarini ko‘rish uchun QR-kodni skaner qiling.</p>
+            </div>
             <a class="btn btn-primary btn-large" href="{% url 'shop:order_history' %}">Buyurtmalarim</a>
         </div>
     </div>

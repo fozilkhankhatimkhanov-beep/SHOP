@@ -66,6 +66,22 @@ body {
     color: var(--gray) !important;
 }
 
+.main-nav a[aria-current="page"]:not(.btn) {
+    color: #b7adff !important;
+    background: transparent;
+}
+
+.main-nav a:hover,
+.main-nav a[aria-current="page"]:not(.btn),
+.search-form button,
+.search-form button:hover {
+    background: transparent;
+}
+
+.search-form button {
+    color: #b7adff;
+}
+
 .main-nav a.btn-primary {
     color: #ffffff !important;
 }
@@ -170,6 +186,36 @@ table {
 [data-theme="night"] .home-products .add-to-cart-btn:hover:not(:disabled) {
     background: var(--primary);
     color: #fff;
+}
+
+[data-theme="night"] .btn-primary {
+    background: linear-gradient(135deg, #8173ff, #6555e8 58%, #5142cb);
+}
+
+[data-theme="night"] .btn-danger {
+    background: rgba(231, 76, 60, 0.12);
+    color: #ff8e83;
+    border-color: rgba(255, 142, 131, 0.3);
+}
+
+[data-theme="night"] .cart-quantity-control {
+    background: rgba(108, 92, 231, 0.09);
+    border-color: rgba(173, 162, 255, 0.2);
+}
+
+[data-theme="night"] .cart-qty-btn {
+    background: linear-gradient(145deg, #302a4e, #25213a);
+    border-color: rgba(173, 162, 255, 0.18);
+    color: #c5bdff;
+}
+
+[data-theme="night"] .cart-qty-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #8173ff, #6555e8);
+    color: #fff;
+}
+
+[data-theme="night"] .cart-qty-input {
+    background: transparent;
 }
 
 [data-theme="night"] .field-group input::placeholder,

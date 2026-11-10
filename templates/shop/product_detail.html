@@ -69,10 +69,11 @@
                         <input type="number" id="qty-input" value="1" min="1" max="{{ product.stock }}" />
                         <button class="qty-btn" id="qty-plus">+</button>
                     </div>
-                    <button class="btn btn-primary btn-large"
+                    <button class="btn btn-primary btn-large{% if product.id|stringformat:'s' in cart_product_ids %} in-cart{% endif %}"
                             id="add-to-cart-detail"
-                            data-product-id="{{ product.id }}">
-                        Savatga qo'shish
+                            data-product-id="{{ product.id }}"
+                            data-cart-quantity="{{ cart_product_quantities|cart_quantity:product.id }}">
+                        {% if product.id|stringformat:'s' in cart_product_ids %}Savatda ({{ cart_product_quantities|cart_quantity:product.id }}x) ✓{% else %}Savatga qo'shish{% endif %}
                     </button>
                     {% else %}
                     <button class="btn btn-secondary btn-large" disabled>Buyurtma berish mumkin emas</button>
@@ -91,48 +92,4 @@
         </div>
     </div>
 </section>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const productId = {{ product.id }};
-    const qtyInput = document.getElementById('qty-input');
-    const maxStock = {{ product.stock }};
-    const addButton = document.getElementById('add-to-cart-detail');
-    const ratingInput = document.getElementById('rating-score');
-    const ratingOutput = document.getElementById('rating-output');
-
-    if (ratingInput && ratingOutput) {
-        ratingInput.addEventListener('input', function () {
-            ratingOutput.value = this.value;
-            ratingOutput.textContent = this.value;
-        });
-    }
-
-    if (!qtyInput || !addButton) {
-        return;
-    }
-
-    function setQuantity(value) {
-        qtyInput.value = Math.min(maxStock, Math.max(1, Number(value) || 1));
-    }
-
-    document.getElementById('qty-minus').addEventListener('click', function () {
-        setQuantity(Number(qtyInput.value) - 1);
-    });
-
-    document.getElementById('qty-plus').addEventListener('click', function () {
-        setQuantity(Number(qtyInput.value) + 1);
-    });
-
-    qtyInput.addEventListener('change', function () {
-        setQuantity(qtyInput.value);
-    });
-
-    addButton.addEventListener('click', function () {
-        addToCart(productId, Number(qtyInput.value));
-    });
-});
-</script>
 {% endblock %}

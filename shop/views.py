@@ -1,15 +1,27 @@
+import base64
 from decimal import Decimal
+from io import BytesIO
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Avg, Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.decorators.http import require_POST
+import qrcode
+from qrcode.image.svg import SvgPathImage
 
 from .cart import Cart
 from .forms import CheckoutForm
-from .models import Category, Order, OrderItem, Product, ProductRating
+from .models import (
+    ORDER_CANCELLATION_WINDOW,
+    Category,
+    Order,
+    OrderItem,
+    Product,
+    ProductRating,
+)
 
 
 def _rated_products():
@@ -40,9 +52,13 @@ def product_list(request, category_slug=None):
         category = get_object_or_404(Category, slug=category_slug)
         products = products.filter(category=category)
 
-    if query:
+    for term in query.split():
         products = products.filter(
-            Q(name__icontains=query) | Q(description__icontains=query)
+            Q(name__icontains=term)
+            | Q(slug__icontains=term)
+            | Q(description__icontains=term)
+            | Q(category__name__icontains=term)
+            | Q(category__slug__icontains=term)
         )
 
     return render(request, 'shop/product_list.html', {
@@ -176,13 +192,72 @@ def order_success(request, order_id):
         pk=order_id,
         user=request.user,
     )
-    return render(request, 'shop/order_success.html', {'order': order})
+    receipt_lines = [
+        f'Buyurtma #{order.pk}',
+        f'Sana: {order.created_at:%d.%m.%Y %H:%M}',
+    ]
+    receipt_lines.extend(
+        f'{item.product_name} x {item.quantity}'
+        for item in order.items.all()
+    )
+    receipt_lines.append(f'Jami: {order.total} so\'m')
+
+    qr_image = qrcode.make(
+        '\n'.join(receipt_lines),
+        image_factory=SvgPathImage,
+        box_size=6,
+        border=2,
+    )
+    qr_buffer = BytesIO()
+    qr_image.save(qr_buffer)
+    qr_code_data = base64.b64encode(qr_buffer.getvalue()).decode('ascii')
+
+    return render(request, 'shop/order_success.html', {
+        'order': order,
+        'qr_code_data': qr_code_data,
+    })
 
 
 @login_required(login_url='shop_auth:login')
 def order_history(request):
     orders = Order.objects.filter(user=request.user).prefetch_related('items')
     return render(request, 'shop/order_history.html', {'orders': orders})
+
+
+@login_required(login_url='shop_auth:login')
+@require_POST
+def cancel_order(request, order_id):
+    with transaction.atomic():
+        order = get_object_or_404(
+            Order.objects.select_for_update(),
+            pk=order_id,
+            user=request.user,
+        )
+        if order.status != Order.Status.PENDING:
+            messages.error(request, 'Faqat kutilayotgan buyurtmani bekor qilish mumkin.')
+        elif timezone.now() >= order.created_at + ORDER_CANCELLATION_WINDOW:
+            messages.error(request, 'Buyurtmani bekor qilish uchun 30 daqiqa o‘tib ketgan.')
+        else:
+            items = list(
+                OrderItem.objects.filter(order=order).values(
+                    'product_id',
+                    'quantity',
+                )
+            )
+            products = Product.objects.select_for_update().in_bulk(
+                item['product_id'] for item in items if item['product_id'] is not None
+            )
+            for item in items:
+                product = products.get(item['product_id'])
+                if product is not None:
+                    product.stock += item['quantity']
+                    product.save(update_fields=('stock', 'updated_at'))
+
+            order.status = Order.Status.CANCELED
+            order.save(update_fields=('status',))
+            messages.success(request, 'Buyurtma bekor qilindi.')
+
+    return redirect('shop:order_history')
 
 
 @login_required(login_url='shop_auth:login')

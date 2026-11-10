@@ -6,9 +6,9 @@
 {% block content %}
 <section class="page-header">
     <div class="container">
-        <h1>{{ category.name|default:"Barcha mahsulotlar" }}</h1>
+        <h1>{% if query %}Qidiruv natijalari{% else %}{{ category.name|default:"Barcha mahsulotlar" }}{% endif %}</h1>
         {% if query %}
-        <p>“{{ query }}” bo‘yicha qidiruv natijalari</p>
+        <p>“{{ query }}” bo‘yicha {{ products|length }} ta mahsulot topildi</p>
         {% endif %}
     </div>
 </section>
@@ -39,10 +39,11 @@
                         </p>
                     </div>
                 </a>
-                <button class="add-to-cart-btn"
+                <button class="add-to-cart-btn{% if product.id|stringformat:'s' in cart_product_ids %} in-cart{% endif %}"
                         data-product-id="{{ product.id }}"
+                        data-cart-quantity="{{ cart_product_quantities|cart_quantity:product.id }}"
                         {% if product.stock == 0 %}disabled{% endif %}>
-                    {% if product.stock == 0 %}Sotuvda yo'q{% else %}Savatga qo'shish{% endif %}
+                    {% if product.stock == 0 %}Sotuvda yo'q{% elif product.id|stringformat:'s' in cart_product_ids %}Savatda ({{ cart_product_quantities|cart_quantity:product.id }}x) ✓{% else %}Savatga qo'shish{% endif %}
                 </button>
             </div>
             {% endfor %}

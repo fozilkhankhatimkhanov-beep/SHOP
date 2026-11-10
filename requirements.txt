@@ -1,4 +1,5 @@
 Django>=4.2,<6
 Pillow
+qrcode>=8.2,<9
 gunicorn
 whitenoise
