@@ -1,2 +1,7 @@
 Django>=4.2,<6
 Pillow
+
+Django>=4.2,<6
+Pillow
+qrcode
+gunicorn
