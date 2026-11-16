@@ -13,7 +13,14 @@ from django.urls import reverse
 from django.utils import timezone
 from decimal import Decimal
 
-from shop.models import Category, Order, OrderItem, Product, ProductRating
+from shop.models import (
+    Category,
+    Order,
+    OrderItem,
+    Product,
+    ProductRating,
+    SavedPaymentCard,
+)
 
 
 class CategoryModelTest(TestCase):
@@ -49,6 +56,27 @@ class ProductModelTest(TestCase):
         self.assertEqual(product.stock, 0)
         self.assertTrue(product.is_available)
         self.assertEqual(str(product), "Lego Set")
+        self.assertEqual(product.card_price, Decimal("1140000.00"))
+        self.assertTrue(product.has_card_discount)
+
+    def test_card_discount_starts_at_twenty_thousand_soums(self):
+        below_threshold = Product.objects.create(
+            category=self.category,
+            name="Cheap toy",
+            slug="cheap-toy",
+            price=Decimal("19999.00"),
+        )
+        at_threshold = Product.objects.create(
+            category=self.category,
+            name="Eligible toy",
+            slug="eligible-toy",
+            price=Decimal("20000.00"),
+        )
+
+        self.assertEqual(below_threshold.card_price, Decimal("19999.00"))
+        self.assertFalse(below_threshold.has_card_discount)
+        self.assertEqual(at_threshold.card_price, Decimal("19000.00"))
+        self.assertTrue(at_threshold.has_card_discount)
 
     def test_available_products_filter(self):
         Product.objects.create(
@@ -125,7 +153,7 @@ class ShopViewTest(TestCase):
         response = self.client.get(reverse("shop:home"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Onlayn Bozor")
-        self.assertContains(response, "site.js?v=3")
+        self.assertContains(response, "site.js?v=4")
         self.assertRegex(
             response.content.decode(),
             r'<a href="/"[\r\n\s]+class="active" aria-current="page">Bosh sahifa',
@@ -189,6 +217,34 @@ class ShopViewTest(TestCase):
             response.content.decode(),
             r'<a href="/shop/"[\r\n\s]+class="active" aria-current="page">Mahsulotlar',
         )
+
+    def test_product_pages_show_cash_and_discounted_card_prices(self):
+        category = Category.objects.create(name="Kitoblar", slug="kitoblar")
+        product = Product.objects.create(
+            category=category,
+            name="Python Darslik",
+            slug="python-darslik",
+            price=Decimal("20000.00"),
+            stock=3,
+        )
+
+        list_response = self.client.get(reverse("shop:product_list"))
+        detail_response = self.client.get(
+            reverse(
+                "shop:product_detail",
+                kwargs={
+                    "category_slug": category.slug,
+                    "product_slug": product.slug,
+                },
+            )
+        )
+
+        for response in (list_response, detail_response):
+            self.assertContains(response, "Naqd pul")
+            self.assertContains(response, "Plastik karta")
+            self.assertContains(response, "−5%")
+            self.assertContains(response, "20 000 so&#x27;m")
+            self.assertContains(response, "19 000 so&#x27;m")
 
     def test_carted_products_are_marked_on_catalog_and_detail_pages(self):
         category = Category.objects.create(name="Kitoblar", slug="kitoblar")
@@ -410,10 +466,128 @@ class ShopViewTest(TestCase):
         item = OrderItem.objects.get(order=order)
         product.refresh_from_db()
         self.assertEqual(order.total, Decimal("300000.00"))
+        self.assertEqual(order.payment_method, Order.PaymentMethod.CASH)
         self.assertEqual(item.product_name, product.name)
         self.assertEqual(item.quantity, 2)
         self.assertEqual(product.stock, 3)
         self.assertEqual(self.client.session["cart"], {})
+
+    def test_card_checkout_applies_discount_per_eligible_product(self):
+        category = Category.objects.create(name="Kitoblar", slug="kitoblar")
+        eligible_product = Product.objects.create(
+            category=category,
+            name="Eligible book",
+            slug="eligible-book",
+            price=Decimal("25000.00"),
+            stock=3,
+        )
+        cheap_product = Product.objects.create(
+            category=category,
+            name="Cheap book",
+            slug="cheap-book",
+            price=Decimal("15000.00"),
+            stock=3,
+        )
+        self.client.post(reverse("shop:cart_add", args=[eligible_product.id]), {"quantity": 2})
+        self.client.post(reverse("shop:cart_add", args=[cheap_product.id]), {"quantity": 1})
+        SavedPaymentCard.objects.create(
+            user=self.user,
+            brand=SavedPaymentCard.Brand.UZCARD,
+            last_four='1234',
+        )
+
+        response = self.client.post(
+            reverse("shop:checkout"),
+            {
+                "phone": "+998 90 123 45 67",
+                "address": "Toshkent, Chilonzor, 12-uy",
+                "payment_method": Order.PaymentMethod.CARD,
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        order = Order.objects.get(user=self.user)
+        self.assertEqual(order.payment_method, Order.PaymentMethod.CARD)
+        self.assertEqual(order.total, Decimal("62500.00"))
+        saved_prices = {
+            item.product_name: item.price
+            for item in order.items.all()
+        }
+        self.assertEqual(saved_prices["Eligible book"], Decimal("23750.00"))
+        self.assertEqual(saved_prices["Cheap book"], Decimal("15000.00"))
+
+    def test_checkout_page_shows_payment_choices_and_totals(self):
+        category = Category.objects.create(name="Kitoblar", slug="kitoblar")
+        product = Product.objects.create(
+            category=category,
+            name="Python Darslik",
+            slug="python-darslik",
+            price=Decimal("25000.00"),
+            stock=3,
+        )
+        self.client.post(reverse("shop:cart_add", args=[product.id]), {"quantity": 1})
+
+        response = self.client.get(reverse("shop:checkout"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'value="+998"')
+        self.assertContains(response, "Naqd pul")
+        self.assertContains(response, "Plastik karta")
+        self.assertNotContains(response, "Onlayn to‘lov hozircha mavjud emas")
+        self.assertNotContains(response, "5% chegirma")
+        self.assertContains(response, "Karta qo‘shish")
+        self.assertContains(response, "checkout.js?v=1")
+        self.assertContains(response, "25 000 so&#x27;m")
+        self.assertContains(response, "23 750 so&#x27;m")
+
+    def test_card_checkout_requires_a_saved_card(self):
+        category = Category.objects.create(name="Kitoblar", slug="kitoblar")
+        product = Product.objects.create(
+            category=category,
+            name="Python Darslik",
+            slug="python-darslik",
+            price=Decimal("25000.00"),
+            stock=3,
+        )
+        self.client.post(reverse("shop:cart_add", args=[product.id]), {"quantity": 1})
+
+        response = self.client.post(
+            reverse("shop:checkout"),
+            {
+                "phone": "+998 90 123 45 67",
+                "address": "Toshkent, Chilonzor, 12-uy",
+                "payment_method": Order.PaymentMethod.CARD,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "avval karta qo‘shing")
+        self.assertFalse(Order.objects.exists())
+
+    def test_add_saved_card_stores_only_brand_and_last_four(self):
+        response = self.client.post(
+            reverse("shop:add_saved_payment_card"),
+            {'brand': SavedPaymentCard.Brand.HUMO, 'last_four': '8600'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {
+            'success': True,
+            'card': {'brand': 'Humo', 'last_four': '8600'},
+        })
+        card = SavedPaymentCard.objects.get(user=self.user)
+        self.assertEqual(card.brand, SavedPaymentCard.Brand.HUMO)
+        self.assertEqual(card.last_four, '8600')
+
+    def test_add_saved_card_rejects_invalid_card_metadata(self):
+        response = self.client.post(
+            reverse("shop:add_saved_payment_card"),
+            {'brand': 'visa', 'last_four': '12x4'},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(SavedPaymentCard.objects.exists())
 
     def test_checkout_rejects_insufficient_stock_without_creating_order(self):
         category = Category.objects.create(name="Kitoblar", slug="kitoblar")

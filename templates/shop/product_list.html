@@ -33,7 +33,7 @@
                     {% endif %}
                     <div class="product-info">
                         <h3>{{ product.name }}</h3>
-                        <p class="product-price">{{ product.price|uzs }}</p>
+                        {% include 'shop/_product_prices.html' with product=product compact=True %}
                         <p class="product-rating-summary">
                             {% if product.average_rating %}★ {{ product.average_rating|floatformat:1 }}/15 · {{ product.rating_count }} baho{% else %}Hali baholanmagan{% endif %}
                         </p>

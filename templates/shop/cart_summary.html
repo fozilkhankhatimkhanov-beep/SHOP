@@ -40,7 +40,12 @@
                                     </div>
                                 </div>
                             </td>
-                            <td class="text-center">{{ item.price|uzs }}</td>
+                            <td class="text-center">
+                                <div class="cart-price-options">
+                                    <span>Naqd: {{ item.price|uzs }}</span>
+                                    <strong>Karta: {{ item.card_price|uzs }}</strong>
+                                </div>
+                            </td>
                             <td class="text-center">
                                 <div class="cart-quantity-control">
                                     <button class="cart-qty-btn"
@@ -63,7 +68,12 @@
                                             {% if item.quantity >= item.product.stock %}disabled{% endif %}>+</button>
                                 </div>
                             </td>
-                            <td class="text-center cart-item-total">{{ item.total_price|uzs }}</td>
+                            <td class="text-center cart-item-total">
+                                <div class="cart-price-options">
+                                    <span>Naqd: {{ item.total_price|uzs }}</span>
+                                    <strong>Karta: {{ item.card_total_price|uzs }}</strong>
+                                </div>
+                            </td>
                             <td class="text-center">
                                 <button class="btn btn-danger btn-small remove-item-btn"
                                         data-product-id="{{ item.product.id }}">
@@ -76,7 +86,10 @@
                     <tfoot>
                         <tr>
                             <td colspan="3"></td>
-                            <td class="cart-grand-total">Jami: {{ cart.get_total_price|uzs }}</td>
+                            <td class="cart-grand-total">
+                                <span>Naqd: {{ cart.get_total_price|uzs }}</span>
+                                <strong>Karta: {{ cart.get_card_total_price|uzs }}</strong>
+                            </td>
                             <td></td>
                         </tr>
                     </tfoot>

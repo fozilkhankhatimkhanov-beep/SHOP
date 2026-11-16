@@ -5,6 +5,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_POST
 from .models import Product
+from .pricing import discounted_card_price
 
 
 class Cart:
@@ -60,6 +61,8 @@ class Cart:
                 continue
             item['price'] = Decimal(item['price'])
             item['total_price'] = item['price'] * item['quantity']
+            item['card_price'] = discounted_card_price(item['price'])
+            item['card_total_price'] = item['card_price'] * item['quantity']
             yield item
 
     def __len__(self):
@@ -77,6 +80,22 @@ class Cart:
                     item['price'] = current_price
                     price_changed = True
                 total += product.price * item['quantity']
+        if price_changed:
+            self.save()
+        return total
+
+    def get_card_total_price(self):
+        products = Product.objects.in_bulk(self.cart.keys())
+        total = Decimal('0.00')
+        price_changed = False
+        for product_id, item in self.cart.items():
+            product = products.get(int(product_id))
+            if product is not None:
+                current_price = str(product.price)
+                if item.get('price') != current_price:
+                    item['price'] = current_price
+                    price_changed = True
+                total += discounted_card_price(product.price) * item['quantity']
         if price_changed:
             self.save()
         return total

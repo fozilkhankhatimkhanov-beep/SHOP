@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Avg, Count, Q
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -21,7 +22,9 @@ from .models import (
     OrderItem,
     Product,
     ProductRating,
+    SavedPaymentCard,
 )
+from .pricing import discounted_card_price
 
 
 def _rated_products():
@@ -94,14 +97,67 @@ def cart_summary(request):
 
 
 @login_required(login_url='shop_auth:login')
+@require_POST
+def add_saved_payment_card(request):
+    brand = request.POST.get('brand', '')
+    last_four = request.POST.get('last_four', '')
+    if (
+        brand not in SavedPaymentCard.Brand.values
+        or len(last_four) != 4
+        or not last_four.isascii()
+        or not last_four.isdigit()
+    ):
+        return JsonResponse(
+            {'success': False, 'error': 'Karta ma’lumotlari noto‘g‘ri.'},
+            status=400,
+        )
+
+    card = SavedPaymentCard.objects.filter(
+        user=request.user,
+        brand=brand,
+        last_four=last_four,
+    ).first()
+    if card is None:
+        card = SavedPaymentCard.objects.create(
+            user=request.user,
+            brand=brand,
+            last_four=last_four,
+        )
+
+    return JsonResponse({
+        'success': True,
+        'card': {
+            'brand': card.get_brand_display(),
+            'last_four': card.last_four,
+        },
+    })
+
+
+@login_required(login_url='shop_auth:login')
 def checkout(request):
     cart = Cart(request)
+    saved_cards = request.user.saved_payment_cards.all()
     form = CheckoutForm(request.POST or None)
     if not cart.cart:
         messages.error(request, 'Buyurtma berish uchun savatga mahsulot qo‘shing.')
         return redirect('shop:cart_summary')
 
     if request.method == 'POST' and form.is_valid():
+        payment_method = form.cleaned_data['payment_method']
+        if (
+            payment_method == Order.PaymentMethod.CARD
+            and not saved_cards.exists()
+        ):
+            form.add_error(
+                'payment_method',
+                'Plastik karta bilan buyurtma berish uchun avval karta qo‘shing.',
+            )
+            return render(request, 'shop/checkout.html', {
+                'cart': cart,
+                'form': form,
+                'saved_cards': saved_cards,
+            })
+
         try:
             requested_quantities = {
                 int(product_id): int(item['quantity'])
@@ -146,12 +202,21 @@ def checkout(request):
                 return render(request, 'shop/checkout.html', {
                     'cart': cart,
                     'form': form,
+                    'saved_cards': saved_cards,
                 })
 
+            unit_prices = {
+                product_id: (
+                    discounted_card_price(product.price)
+                    if payment_method == Order.PaymentMethod.CARD
+                    else product.price
+                )
+                for product_id, product in products_by_id.items()
+            }
             order_total = sum(
                 (
-                    product.price * requested_quantities[product_id]
-                    for product_id, product in products_by_id.items()
+                    unit_prices[product_id] * requested_quantities[product_id]
+                    for product_id in products_by_id
                 ),
                 Decimal('0.00'),
             )
@@ -159,6 +224,7 @@ def checkout(request):
                 user=request.user,
                 phone=form.cleaned_data['phone'],
                 address=form.cleaned_data['address'],
+                payment_method=payment_method,
                 total=order_total,
             )
             OrderItem.objects.bulk_create([
@@ -166,7 +232,7 @@ def checkout(request):
                     order=order,
                     product=product,
                     product_name=product.name,
-                    price=product.price,
+                    price=unit_prices[product_id],
                     quantity=requested_quantities[product_id],
                 )
                 for product_id, product in products_by_id.items()
@@ -182,6 +248,7 @@ def checkout(request):
     return render(request, 'shop/checkout.html', {
         'cart': cart,
         'form': form,
+        'saved_cards': saved_cards,
     })
 
 

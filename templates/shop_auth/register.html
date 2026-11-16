@@ -74,12 +74,11 @@
                                placeholder="Parolni takrorlang" />
                     </div>
 
-                    <button type="submit" class="btn btn-primary btn-large auth-submit">Ro'yxatdan o'tish</button>
+                    <div class="auth-actions">
+                        <button type="submit" class="btn btn-primary btn-large auth-submit">Ro'yxatdan o'tish</button>
+                        <a class="btn btn-ghost btn-large" href="{{ login_url }}">Kirish</a>
+                    </div>
                 </form>
-
-                <div class="auth-footer">
-                    <p>Hisobingiz bormi? <a href="{{ login_url }}">Kirish</a></p>
-                </div>
             </div>
         </div>
     </div>

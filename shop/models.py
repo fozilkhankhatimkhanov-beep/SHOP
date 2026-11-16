@@ -1,10 +1,12 @@
 from datetime import timedelta
 
 from django.conf import settings
-from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
+
+from .pricing import CARD_DISCOUNT_THRESHOLD, discounted_card_price
 
 ORDER_CANCELLATION_WINDOW = timedelta(minutes=30)
 
@@ -38,6 +40,14 @@ class Product(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def card_price(self):
+        return discounted_card_price(self.price)
+
+    @property
+    def has_card_discount(self):
+        return self.price >= CARD_DISCOUNT_THRESHOLD
 
 
 class ProductRating(models.Model):
@@ -73,7 +83,35 @@ class ProductRating(models.Model):
         return f'{self.user} rated {self.product}: {self.score}/15'
 
 
+class SavedPaymentCard(models.Model):
+    class Brand(models.TextChoices):
+        UZCARD = 'uzcard', 'Uzcard'
+        HUMO = 'humo', 'Humo'
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name='saved_payment_cards',
+        on_delete=models.CASCADE,
+    )
+    brand = models.CharField(max_length=8, choices=Brand.choices)
+    last_four = models.CharField(
+        max_length=4,
+        validators=[RegexValidator(r'^\d{4}$')],
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ('-created_at',)
+
+    def __str__(self):
+        return f'{self.get_brand_display()} •••• {self.last_four}'
+
+
 class Order(models.Model):
+    class PaymentMethod(models.TextChoices):
+        CASH = 'cash', 'Naqd pul'
+        CARD = 'card', 'Plastik karta'
+
     class Status(models.TextChoices):
         PENDING = 'pending', 'Kutilmoqda'
         CONFIRMED = 'confirmed', 'Tasdiqlangan'
@@ -88,6 +126,11 @@ class Order(models.Model):
     )
     phone = models.CharField(max_length=32)
     address = models.TextField()
+    payment_method = models.CharField(
+        max_length=8,
+        choices=PaymentMethod.choices,
+        default=PaymentMethod.CASH,
+    )
     status = models.CharField(
         max_length=16,
         choices=Status.choices,

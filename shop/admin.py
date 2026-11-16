@@ -36,8 +36,23 @@ class OrderItemInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'phone', 'status', 'total', 'created_at')
+    list_display = (
+        'id',
+        'user',
+        'phone',
+        'status',
+        'get_payment_method_display',
+        'total',
+        'created_at',
+    )
     list_filter = ('status', 'created_at')
     search_fields = ('user__username', 'phone', 'address')
-    readonly_fields = ('user', 'phone', 'address', 'total', 'created_at')
+    readonly_fields = (
+        'user',
+        'phone',
+        'address',
+        'payment_method',
+        'total',
+        'created_at',
+    )
     inlines = (OrderItemInline,)

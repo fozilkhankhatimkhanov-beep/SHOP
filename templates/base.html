@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="csrf-token" content="{{ csrf_token }}" />
     <title>{% block title %}Onlayn Bozor{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=6" />
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=12" />
     <link rel="stylesheet" href="{% static 'css/theme.css' %}?v=3" />
     <script src="{% static 'js/theme.js' %}"></script>
     {% block extra_css %}{% endblock %}
@@ -36,6 +36,8 @@
                 </a>
                 <a href="{% url 'shop:order_history' %}"
                    {% if request.resolver_match.url_name == 'order_history' or request.resolver_match.url_name == 'order_success' %}class="active" aria-current="page"{% endif %}>Buyurtmalarim</a>
+                <a href="{% url 'shop_auth:password_change' %}"
+                   {% if request.resolver_match.url_name == 'password_change' or request.resolver_match.url_name == 'password_change_done' %}class="active" aria-current="page"{% endif %}>Parolni o‘zgartirish</a>
                 <button id="theme-toggle" class="theme-toggle" type="button"
                         aria-label="Tungi rejimni yoqish" aria-pressed="false">
                     ☀️
@@ -44,11 +46,6 @@
                     {% csrf_token %}
                     <button type="submit" class="btn btn-ghost btn-small">Chiqish</button>
                 </form>
-                {% else %}
-                <a href="{{ register_url }}" class="btn btn-primary btn-small{% if request.resolver_match.url_name == 'register' %} active{% endif %}"
-                   {% if request.resolver_match.url_name == 'register' %}aria-current="page"{% endif %}>Ro'yxatdan o'tish</a>
-                <a href="{{ login_url }}" class="btn btn-ghost btn-small{% if request.resolver_match.url_name == 'login' %} active{% endif %}"
-                   {% if request.resolver_match.url_name == 'login' %}aria-current="page"{% endif %}>Kirish</a>
                 {% endif %}
             </nav>
         </div>
@@ -70,6 +67,14 @@
 <footer class="site-footer">
     <div class="container">
         <p>© 2026 Onlayn Bozor — Barcha huquqlar himoyalangan.</p>
+        {% if not user.is_authenticated and request.resolver_match.url_name != 'register' and request.resolver_match.url_name != 'login' %}
+        <div class="auth-footer-actions">
+            <a href="{{ register_url }}" class="btn btn-primary btn-small{% if request.resolver_match.url_name == 'register' %} active{% endif %}"
+               {% if request.resolver_match.url_name == 'register' %}aria-current="page"{% endif %}>Ro'yxatdan o'tish</a>
+            <a href="{{ login_url }}" class="btn btn-ghost btn-small{% if request.resolver_match.url_name == 'login' %} active{% endif %}"
+               {% if request.resolver_match.url_name == 'login' %}aria-current="page"{% endif %}>Kirish</a>
+        </div>
+        {% endif %}
     </div>
 </footer>
 
@@ -82,7 +87,7 @@ var CART_URLS = {
 };
 </script>
 <script src="{% static 'js/cart.js' %}?v=6"></script>
-<script src="{% static 'js/site.js' %}?v=3"></script>
+<script src="{% static 'js/site.js' %}?v=4"></script>
 <script src="{% static 'js/product-detail.js' %}?v=1"></script>
 {% block extra_js %}{% endblock %}
 </body>

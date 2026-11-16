@@ -19,7 +19,7 @@
 
             <div class="product-info-section">
                 <h1>{{ product.name }}</h1>
-                <p class="product-price big">{{ product.price|uzs }}</p>
+                {% include 'shop/_product_prices.html' with product=product prominent=True %}
                 <div class="rating-summary" aria-label="Mahsulot reytingi">
                     {% if product.average_rating %}
                     <span class="rating-score">{{ product.average_rating|floatformat:1 }}</span>

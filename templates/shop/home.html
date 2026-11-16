@@ -37,7 +37,10 @@
                 <span class="home-feature-caption">
                     <span>{{ featured.category.name }}</span>
                     <strong>{{ featured.name }}</strong>
-                    <b>{{ featured.price|uzs }} <i aria-hidden="true">↗</i></b>
+                    <span class="featured-payment-prices">
+                        <span>Naqd: {{ featured.price|uzs }}</span>
+                        <strong>Karta: {{ featured.card_price|uzs }}{% if featured.has_card_discount %} · −5%{% endif %}</strong>
+                    </span>
                 </span>
             </a>
             {% endwith %}
@@ -103,7 +106,7 @@
                     {% endif %}
                     <div class="product-info">
                         <h3>{{ product.name }}</h3>
-                        <p class="product-price">{{ product.price|uzs }}</p>
+                        {% include 'shop/_product_prices.html' with product=product compact=True %}
                         <p class="product-rating-summary">
                             {% if product.average_rating %}★ {{ product.average_rating|floatformat:1 }}/15 · {{ product.rating_count }} baho{% else %}Hali baholanmagan{% endif %}
                         </p>

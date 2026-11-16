@@ -1,10 +1,13 @@
 from django import forms
 
+from .models import Order
+
 
 class CheckoutForm(forms.Form):
     phone = forms.CharField(
         label='Telefon raqami',
         max_length=32,
+        initial='+998',
         widget=forms.TextInput(
             attrs={
                 'autocomplete': 'tel',
@@ -24,6 +27,16 @@ class CheckoutForm(forms.Form):
             },
         ),
     )
+    payment_method = forms.ChoiceField(
+        label='To‘lov usuli',
+        choices=(
+            (Order.PaymentMethod.CASH, 'Naqd pul'),
+            (Order.PaymentMethod.CARD, 'Plastik karta'),
+        ),
+        widget=forms.RadioSelect(),
+        required=False,
+        initial=Order.PaymentMethod.CASH,
+    )
 
     def clean_phone(self):
         phone = ' '.join(self.cleaned_data['phone'].split())
@@ -36,3 +49,6 @@ class CheckoutForm(forms.Form):
         if len(address) < 8:
             raise forms.ValidationError('Yetkazib berish manzilini to‘liq kiriting.')
         return address
+
+    def clean_payment_method(self):
+        return self.cleaned_data['payment_method'] or Order.PaymentMethod.CASH

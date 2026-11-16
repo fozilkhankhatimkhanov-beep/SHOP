@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load shop_extras %}
+{% load static shop_extras %}
 
 {% block title %}Buyurtmani rasmiylashtirish — Onlayn Bozor{% endblock %}
 
@@ -21,13 +21,56 @@
                 {% for field in form %}
                 <div class="field-group">
                     <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {% if field.name == 'payment_method' %}
+                    <div class="payment-method-options">
+                        {% for radio in field %}
+                        <label class="payment-method-option">
+                            {{ radio.tag }}
+                            <span>{{ radio.choice_label }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+
+                    <div class="card-management"
+                         id="card-management"
+                         data-add-card-url="{% url 'shop:add_saved_payment_card' %}"
+                         hidden>
+                        <div class="saved-card-list" id="saved-card-list" aria-live="polite">
+                            {% for card in saved_cards %}
+                            <div class="saved-card">
+                                <span>{{ card.get_brand_display }}</span>
+                                <strong>•••• {{ card.last_four }}</strong>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <button class="btn btn-ghost btn-small"
+                                id="add-card-toggle"
+                                type="button">Karta qo‘shish</button>
+                        <div class="card-entry" id="card-entry" hidden>
+                            <label for="card-number">Karta raqami</label>
+                            <input id="card-number"
+                                   type="text"
+                                   inputmode="numeric"
+                                   maxlength="19"
+                                   autocomplete="off"
+                                   placeholder="5614 0000 0000 0000"
+                                   aria-describedby="card-type-status card-add-status" />
+                            <p id="card-type-status" class="card-type-status" aria-live="polite"></p>
+                            <button class="btn btn-primary btn-small"
+                                    id="save-card-button"
+                                    type="button"
+                                    disabled>Kartani qo‘shish</button>
+                        </div>
+                        <p id="card-add-status" class="card-add-status" aria-live="polite"></p>
+                    </div>
+                    {% else %}
                     {{ field }}
+                    {% endif %}
                     {% for error in field.errors %}
                     <p class="form-error">{{ error }}</p>
                     {% endfor %}
                 </div>
                 {% endfor %}
-                <p class="checkout-note">To‘lov yetkazib berilganda naqd amalga oshiriladi.</p>
                 <button class="btn btn-primary btn-large auth-submit" type="submit">
                     Buyurtmani tasdiqlash
                 </button>
@@ -42,11 +85,19 @@
                 </div>
                 {% endfor %}
                 <div class="checkout-total">
-                    <span>Jami</span>
+                    <span>Naqd pul bilan jami</span>
                     <strong>{{ cart.get_total_price|uzs }}</strong>
+                </div>
+                <div class="checkout-total checkout-card-total">
+                    <span>Plastik karta bilan jami</span>
+                    <strong>{{ cart.get_card_total_price|uzs }}</strong>
                 </div>
             </aside>
         </div>
     </div>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/checkout.js' %}?v=1"></script>
 {% endblock %}

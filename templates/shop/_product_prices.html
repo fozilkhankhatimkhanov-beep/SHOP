@@ -1,0 +1,15 @@
+{% load shop_extras %}
+
+<div class="product-payment-prices{% if compact %} compact{% endif %}{% if prominent %} prominent{% endif %}">
+    <div>
+        <span>Naqd pul</span>
+        <strong>{{ product.price|uzs }}</strong>
+    </div>
+    <div class="card-payment-price">
+        <span>Plastik karta{% if product.has_card_discount %}<em>−5%</em>{% endif %}</span>
+        <strong>{{ product.card_price|uzs }}</strong>
+    </div>
+    {% if not product.has_card_discount %}
+    <small>20 000 so‘mdan past mahsulotlarga chegirma yo‘q.</small>
+    {% endif %}
+</div>

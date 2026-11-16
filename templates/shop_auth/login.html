@@ -55,6 +55,11 @@
                                placeholder="Parol" />
                     </div>
 
+                    <a class="btn btn-ghost btn-small password-change-button"
+                       href="{% url 'shop_auth:password_change' %}">
+                        Parolni o‘zgartirish
+                    </a>
+
                     <div class="form-options">
                         <label class="checkbox-label">
                             <input type="checkbox" name="remember" />
@@ -62,12 +67,11 @@
                         </label>
                     </div>
 
-                    <button type="submit" class="btn btn-primary btn-large auth-submit">Kirish</button>
+                    <div class="auth-actions">
+                        <button type="submit" class="btn btn-primary btn-large auth-submit">Kirish</button>
+                        <a class="btn btn-ghost btn-large" href="{{ register_url }}">Ro'yxatdan o'tish</a>
+                    </div>
                 </form>
-
-                <div class="auth-footer">
-                    <p>Hisobingiz yo'qmi? <a href="{{ register_url }}">Ro'yxatdan o'tish</a></p>
-                </div>
             </div>
         </div>
     </div>

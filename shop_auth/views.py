@@ -1,8 +1,10 @@
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
+from django.contrib.auth.views import PasswordChangeView
 from django.shortcuts import redirect, render
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.utils.http import url_has_allowed_host_and_scheme
 
 
@@ -79,3 +81,9 @@ def logout_view(request):
     if request.method == 'POST':
         logout(request)
     return redirect(reverse('shop:home'))
+
+
+class AccountPasswordChangeView(LoginRequiredMixin, PasswordChangeView):
+    template_name = 'shop_auth/password_change.html'
+    success_url = reverse_lazy('shop_auth:password_change_done')
+    login_url = reverse_lazy('shop_auth:login')
