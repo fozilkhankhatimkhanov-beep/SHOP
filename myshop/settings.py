@@ -20,16 +20,9 @@ DEBUG = (
     else os.environ.get('DEBUG', 'True').lower() in ('true', '1', 'yes')
 )
 ALLOWED_HOSTS = [
-    'shop-4-6n0w.onrender.com',
-    host.strip()
-    for host in (
-        render_hostname or 'shop-4-6n0w.onrender.com',
-        *configured_hosts,
-        'localhost',
-        '127.0.0.1',
-    )
-    if host and host.strip()
+    'shop-4-6n0w.onrender.com'
 ]
+
 CSRF_TRUSTED_ORIGINS = [
     f'https://{host}'
     for host in ALLOWED_HOSTS
