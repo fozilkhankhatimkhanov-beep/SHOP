@@ -7,9 +7,34 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-CHANGE_THIS_IN_PRODUCTION')
 render_hostname = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
-DEBUG = os.environ.get('DEBUG', 'False' if render_hostname else 'True').lower() in ('true', '1', 'yes')
-ALLOWED_HOSTS = [host for host in (render_hostname, 'localhost', '127.0.0.1') if host]
-CSRF_TRUSTED_ORIGINS = [f'https://{render_hostname}'] if render_hostname else []
+allowed_hosts_env = os.environ.get('ALLOWED_HOSTS', '')
+configured_hosts = [host.strip() for host in allowed_hosts_env.split(',') if host.strip()]
+is_render = (
+    os.environ.get('RENDER', '').lower() == 'true'
+    or bool(render_hostname)
+    or any(host.endswith('.onrender.com') for host in configured_hosts)
+)
+DEBUG = (
+    False
+    if is_render
+    else os.environ.get('DEBUG', 'True').lower() in ('true', '1', 'yes')
+)
+ALLOWED_HOSTS = [
+    'shop-4-6n0w.onrender.com',
+    host.strip()
+    for host in (
+        render_hostname or 'shop-4-6n0w.onrender.com',
+        *configured_hosts,
+        'localhost',
+        '127.0.0.1',
+    )
+    if host and host.strip()
+]
+CSRF_TRUSTED_ORIGINS = [
+    f'https://{host}'
+    for host in ALLOWED_HOSTS
+    if host not in ('localhost', '127.0.0.1')
+]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -88,7 +113,7 @@ CART_SESSION_ID = 'cart'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-if render_hostname:
+if is_render:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_SSL_REDIRECT = True
     SECURE_HSTS_SECONDS = 3600

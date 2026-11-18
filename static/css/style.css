@@ -82,6 +82,9 @@ img {
    Header
    =========================== */
 .site-header {
+    width: calc(100% - 24px);
+    margin: 8px 12px 0;
+    border-radius: 18px;
     background: rgba(255, 255, 255, 0.58);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
@@ -97,21 +100,22 @@ img {
     content: '';
     position: absolute;
     bottom: 0;
-    left: 0;
-    right: 0;
+    left: 14px;
+    right: 14px;
     height: 1px;
+    border-radius: 999px;
     background: linear-gradient(90deg, transparent, rgba(108, 92, 231, 0.18), transparent);
 }
 
 .header-row {
     display: flex;
     align-items: center;
-    gap: 20px;
-    flex-wrap: wrap;
+    gap: 12px;
+    flex-wrap: nowrap;
 }
 
 .logo {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     font-weight: 800;
     color: var(--primary);
     flex-shrink: 0;
@@ -123,9 +127,9 @@ img {
 }
 
 .search-form {
-    flex: 1;
-    min-width: 200px;
-    max-width: 400px;
+    flex: 0 1 230px;
+    min-width: 140px;
+    max-width: 260px;
     display: flex;
     background: rgba(255, 255, 255, 0.48);
     border: 1px solid rgba(108, 92, 231, 0.12);
@@ -165,19 +169,26 @@ img {
 
 .main-nav {
     display: flex;
-    gap: 20px;
+    flex: 1 1 auto;
+    gap: 4px;
     align-items: center;
+    justify-content: flex-end;
+    min-width: 0;
+    white-space: nowrap;
 }
 
 .user-logout-form {
+    flex: 0 0 auto;
     margin: 0;
 }
 
 .main-nav a {
     color: var(--gray);
     font-weight: 500;
-    padding: 6px 12px;
+    padding: 6px 7px;
     border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    white-space: nowrap;
     transition: var(--transition);
 }
 
@@ -1223,6 +1234,12 @@ img {
    Responsive
    =========================== */
 @media (max-width: 768px) {
+    .site-header {
+        width: calc(100% - 12px);
+        margin: 6px 6px 0;
+        border-radius: 14px;
+    }
+
     .header-row {
         flex-direction: column;
         align-items: stretch;
@@ -1233,11 +1250,34 @@ img {
     }
 
     .main-nav {
-        justify-content: center;
+        justify-content: flex-start;
+        overflow-x: auto;
+        width: 100%;
+        scrollbar-width: none;
+    }
+
+    .main-nav::-webkit-scrollbar {
+        display: none;
+    }
+
+    .main-nav a {
+        flex: 0 0 auto;
     }
 
     .product-detail-grid {
         grid-template-columns: 1fr;
+    }
+
+    @media (min-width: 769px) and (max-width: 1100px) {
+        .header-row {
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .main-nav {
+            flex: 0 0 100%;
+            justify-content: center;
+        }
     }
 
     .cart-container {

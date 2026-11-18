@@ -10,3 +10,5 @@ services:
         value: "False"
       - key: SECRET_KEY
         generateValue: true
+      - key: ALLOWED_HOSTS
+        value: shop-4-6n0w.onrender.com
