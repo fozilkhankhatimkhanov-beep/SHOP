@@ -15,9 +15,7 @@ is_render = (
     or any(host.endswith('.onrender.com') for host in configured_hosts)
 )
 DEBUG = (
-    False
-    if is_render
-    else os.environ.get('DEBUG', 'True').lower() in ('true', '1', 'yes')
+    True
 )
 ALLOWED_HOSTS = [
     'shop-4-6n0w.onrender.com',
