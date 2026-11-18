@@ -3,8 +3,9 @@ Pillow
 qrcode>=8.2,<9
 gunicorn
 whitenoise
-
 Django>=4.2,<6
 Pillow
 qrcode
 gunicorn
+gunicorn
+
