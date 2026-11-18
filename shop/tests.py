@@ -153,7 +153,10 @@ class ShopViewTest(TestCase):
         response = self.client.get(reverse("shop:home"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Onlayn Bozor")
-        self.assertContains(response, "site.js?v=4")
+        self.assertRegex(
+            response.content.decode(),
+            r"site(?:\.[0-9a-f]{12})?\.js\?v=4",
+        )
         self.assertRegex(
             response.content.decode(),
             r'<a href="/"[\r\n\s]+class="active" aria-current="page">Bosh sahifa',
@@ -274,7 +277,10 @@ class ShopViewTest(TestCase):
             detail_response,
             'class="btn btn-primary btn-large in-cart"',
         )
-        self.assertContains(detail_response, "product-detail.js?v=1")
+        self.assertRegex(
+            detail_response.content.decode(),
+            r"product-detail(?:\.[0-9a-f]{12})?\.js\?v=1",
+        )
 
     def test_product_search_filters_names_and_descriptions(self):
         category = Category.objects.create(name="Kitoblar", slug="kitoblar")
@@ -537,7 +543,10 @@ class ShopViewTest(TestCase):
         self.assertNotContains(response, "Onlayn to‘lov hozircha mavjud emas")
         self.assertNotContains(response, "5% chegirma")
         self.assertContains(response, "Karta qo‘shish")
-        self.assertContains(response, "checkout.js?v=1")
+        self.assertRegex(
+            response.content.decode(),
+            r"checkout(?:\.[0-9a-f]{12})?\.js\?v=1",
+        )
         self.assertContains(response, "25 000 so&#x27;m")
         self.assertContains(response, "23 750 so&#x27;m")
 

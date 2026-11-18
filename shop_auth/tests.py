@@ -4,6 +4,14 @@ from django.urls import reverse
 
 
 class AuthFlowTest(TestCase):
+    def test_login_page_links_to_admin_panel(self):
+        response = self.client.get(reverse('shop_auth:login'))
+
+        self.assertContains(
+            response,
+            '<a href="/admin/" class="btn btn-ghost btn-small">Admin</a>',
+        )
+
     def test_register_user_creates_account_and_logs_in(self):
         response = self.client.get("/auth/register/")
         self.assertEqual(response.status_code, 200)
@@ -20,7 +28,10 @@ class AuthFlowTest(TestCase):
         )
         self.assertTrue(response.wsgi_request.user.is_authenticated)
         self.assertContains(response, "Yaxshi tanlov.")
-        self.assertContains(response, "site.js?v=4")
+        self.assertRegex(
+            response.content.decode(),
+            r"site(?:\.[0-9a-f]{12})?\.js\?v=4",
+        )
 
     def test_login_remember_checkbox_controls_session_expiry(self):
         user = User.objects.create_user(username="remember", password="StrongPass123")

@@ -46,7 +46,11 @@
                     {% csrf_token %}
                     <button type="submit" class="btn btn-ghost btn-small">Chiqish</button>
                 </form>
+                {% else %}
+                <a href="{{ register_url }}" class="btn btn-primary btn-small">Ro'yxatdan o'tish</a>
+                <a href="{{ login_url }}" class="btn btn-ghost btn-small">Kirish</a>
                 {% endif %}
+                <a href="{% url 'admin:index' %}" class="btn btn-ghost btn-small">Admin</a>
             </nav>
         </div>
     </div>
