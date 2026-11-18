@@ -20,7 +20,9 @@ DEBUG = (
     else os.environ.get('DEBUG', 'True').lower() in ('true', '1', 'yes')
 )
 ALLOWED_HOSTS = [
-    'shop-4-6n0w.onrender.com'
+    'shop-4-6n0w.onrender.com',
+    'localhost',
+    '127.0.0.1'
 ]
 
 CSRF_TRUSTED_ORIGINS = [
@@ -97,7 +99,14 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'

@@ -176,6 +176,7 @@ class ShopViewTest(TestCase):
             password="test-password",
             email="admin@example.com",
         )
+        Category.objects.create(name="Test category", slug="test-category")
         self.client.force_login(admin_user)
 
         response = self.client.get(reverse("admin:shop_category_changelist"))
